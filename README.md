@@ -30,7 +30,7 @@ The codebase is stdlib-first today: there is no `pyproject.toml` or pinned Pytho
 
 The v1 config contract covers:
 
-- instance identity: `instance_name`, `site_title`, `dashboard_public_url`, `timezone`
+- instance identity: `instance_name`, `site_title`, `service_name`, `dashboard_public_url`, `timezone`
 - contract versioning: `api_contract_version`
 - feature flags: AI chat, animation, and restart-action toggles
 - AI settings: enablement mode, fallback policy, provider, base URL, model, and timeout

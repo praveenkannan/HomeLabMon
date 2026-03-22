@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -u
 
-SERVICE_NAME="pi-monitor-status.service"
-UNIT_FILE="/etc/systemd/system/pi-monitor-status.service"
+SERVICE_NAME="${HOMELABMON_SECURITY_SERVICE_NAME:-${PI_MONITOR_SECURITY_SERVICE_NAME:-homelabmon-status.service}}"
+UNIT_FILE="${HOMELABMON_SECURITY_UNIT_FILE:-${PI_MONITOR_SECURITY_UNIT_FILE:-}}"
 SSHD_CONFIG="/etc/ssh/sshd_config"
 EXPECT_BIND_HOST="127.0.0.1"
 EXPECT_BIND_PORT="8081"
@@ -24,8 +24,8 @@ Usage: security_verify.sh [options]
 Read-only security posture checks for HomeLabMon on Pi.
 
 Options:
-  --service-name NAME         systemd service name (default: pi-monitor-status.service)
-  --unit-file PATH            systemd unit file path (default: /etc/systemd/system/pi-monitor-status.service)
+  --service-name NAME         systemd service name (default: homelabmon-status.service)
+  --unit-file PATH            systemd unit file path (default: /etc/systemd/system/<service-name>)
   --sshd-config PATH          sshd_config path (default: /etc/ssh/sshd_config)
   --expect-bind-host HOST     expected local bind host (default: 127.0.0.1)
   --expect-bind-port PORT     expected dashboard port (default: 8081)
@@ -112,6 +112,10 @@ parse_args() {
         ;;
     esac
   done
+
+  if [[ -z "$UNIT_FILE" ]]; then
+    UNIT_FILE="/etc/systemd/system/${SERVICE_NAME}"
+  fi
 }
 
 read_or_empty() {
@@ -125,7 +129,11 @@ extract_bind_from_env_blob() {
   local blob="$1"
   local token=""
   token=$(printf '%s' "$blob" | tr ' ' '\n' | grep -E '^PI_MONITOR_BIND_HOST=' | tail -n 1 || true)
+  if [[ -z "$token" ]]; then
+    token=$(printf '%s' "$blob" | tr ' ' '\n' | grep -E '^HOMELABMON_BIND_HOST=' | tail -n 1 || true)
+  fi
   token="${token#PI_MONITOR_BIND_HOST=}"
+  token="${token#HOMELABMON_BIND_HOST=}"
   token="${token%\"}"
   token="${token#\"}"
   printf '%s' "$token"
@@ -133,7 +141,12 @@ extract_bind_from_env_blob() {
 
 extract_bind_from_unit_line() {
   local line="$1"
-  local token="${line#*PI_MONITOR_BIND_HOST=}"
+  local token="$line"
+  if [[ "$token" == *HOMELABMON_BIND_HOST=* ]]; then
+    token="${token#*HOMELABMON_BIND_HOST=}"
+  else
+    token="${token#*PI_MONITOR_BIND_HOST=}"
+  fi
   token="${token%%[[:space:]]*}"
   token="${token%\"}"
   token="${token#\"}"
@@ -175,18 +188,18 @@ check_bind_policy() {
   if [[ -n "$env_blob" ]]; then
     env_bind=$(extract_bind_from_env_blob "$env_blob")
     if [[ "$env_bind" == "$EXPECT_BIND_HOST" ]]; then
-      pass "systemd env enforces PI_MONITOR_BIND_HOST=$EXPECT_BIND_HOST"
+      pass "systemd env enforces bind host $EXPECT_BIND_HOST"
     elif [[ -n "$env_bind" ]]; then
       fail "systemd env bind host is $env_bind (expected $EXPECT_BIND_HOST)"
     else
-      warn "systemd env does not expose PI_MONITOR_BIND_HOST; checking unit file"
+      warn "systemd env does not expose a bind host override; checking unit file"
     fi
   else
     warn "unable to read systemd environment for $SERVICE_NAME"
   fi
 
   if [[ -r "$UNIT_FILE" ]]; then
-    unit_line=$(grep -E '^[[:space:]]*Environment=PI_MONITOR_BIND_HOST=' "$UNIT_FILE" | tail -n 1 || true)
+    unit_line=$(grep -E '^[[:space:]]*Environment=(HOMELABMON_BIND_HOST|PI_MONITOR_BIND_HOST)=' "$UNIT_FILE" | tail -n 1 || true)
     if [[ -n "$unit_line" ]]; then
       unit_bind=$(extract_bind_from_unit_line "$unit_line")
       if [[ "$unit_bind" == "$EXPECT_BIND_HOST" ]]; then
@@ -195,7 +208,7 @@ check_bind_policy() {
         fail "unit file bind host is $unit_bind (expected $EXPECT_BIND_HOST)"
       fi
     else
-      warn "unit file does not set PI_MONITOR_BIND_HOST explicitly"
+      warn "unit file does not set an explicit bind host override"
     fi
   else
     fail "missing unreadable unit file: $UNIT_FILE"
