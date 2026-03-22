@@ -1,0 +1,23 @@
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Python caches and bytecode
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Local runtime config and generated test renders
+config/devices.json
+config/*.local.json
+tests/_tmp_history_render/
+www/status.html
+
+# Runtime state and release artifacts
+state/*
+
+# Common generated files
+*.log
+*.tmp
+.DS_Store

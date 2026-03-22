@@ -1,0 +1,277 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://homelabmon.local/config.schema.v1.json",
+  "title": "HomeLabMon Config v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "instance_name",
+    "site_title",
+    "dashboard_public_url",
+    "timezone",
+    "api_contract_version",
+    "feature_flags",
+    "ai",
+    "devices"
+  ],
+  "properties": {
+    "instance_name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "site_title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "dashboard_public_url": {
+      "type": "string",
+      "format": "uri",
+      "minLength": 1
+    },
+    "timezone": {
+      "type": "string",
+      "minLength": 1
+    },
+    "api_contract_version": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "feature_flags": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ai_chat_enabled",
+        "advanced_animations",
+        "restart_actions_enabled"
+      ],
+      "properties": {
+        "ai_chat_enabled": {
+          "type": "boolean"
+        },
+        "advanced_animations": {
+          "type": "boolean"
+        },
+        "restart_actions_enabled": {
+          "type": "boolean"
+        }
+      }
+    },
+    "ai": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ai_enabled",
+        "allow_ai_fallback",
+        "ai_provider",
+        "ai_base_url",
+        "ai_model",
+        "ai_timeout_ms"
+      ],
+      "properties": {
+        "ai_enabled": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "true",
+            "false"
+          ]
+        },
+        "allow_ai_fallback": {
+          "type": "boolean"
+        },
+        "ai_provider": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ai_base_url": {
+          "type": "string",
+          "format": "uri",
+          "minLength": 1
+        },
+        "ai_model": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ai_timeout_ms": {
+          "type": "integer",
+          "minimum": 100
+        }
+      }
+    },
+    "temperature": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "defaults": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "warning_c": {"type": "number"},
+            "critical_c": {"type": "number"},
+            "stale_after_s": {"type": "integer", "minimum": 30},
+            "command_timeout_s": {"type": "number", "minimum": 0.1},
+            "http_timeout_s": {"type": "number", "minimum": 0.1}
+          }
+        },
+        "devices": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "method": {
+                "type": "string",
+                "enum": ["snmpv3", "mac_api", "local_file"]
+              },
+              "oid": {"type": "string"},
+              "paths": {
+                "type": "array",
+                "items": {"type": "string", "minLength": 1}
+              },
+              "url": {"type": "string", "minLength": 1},
+              "field": {"type": "string"},
+              "sampled_at_field": {"type": "string"},
+              "warning_c": {"type": "number"},
+              "critical_c": {"type": "number"},
+              "stale_after_s": {"type": "integer", "minimum": 30},
+              "command_timeout_s": {"type": "number", "minimum": 0.1},
+              "http_timeout_s": {"type": "number", "minimum": 0.1},
+              "scale": {"type": "number"},
+              "offset_c": {"type": "number"},
+              "security_level": {"type": "string"},
+              "username_env": {"type": "string"},
+              "auth_protocol": {"type": "string"},
+              "auth_password_env": {"type": "string"},
+              "privacy_protocol": {"type": "string"},
+              "privacy_password_env": {"type": "string"}
+            }
+          }
+        }
+      }
+    },
+    "devices": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "display_name",
+          "host",
+          "logo_url",
+          "checks",
+          "action_policy",
+          "maintenance"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9_-]*$"
+          },
+          "display_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "host": {
+            "type": "string",
+            "minLength": 1
+          },
+          "logo_url": {
+            "type": "string",
+            "minLength": 1
+          },
+          "checks": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "ping",
+              "tcp_ports",
+              "http_urls",
+              "dns_names"
+            ],
+            "properties": {
+              "ping": {
+                "type": "boolean"
+              },
+              "tcp_ports": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 65535
+                }
+              },
+              "http_urls": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              },
+              "dns_names": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "action_policy": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "allow_restart",
+              "allowed_actions"
+            ],
+            "properties": {
+              "allow_restart": {
+                "type": "boolean"
+              },
+              "allowed_actions": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "restart",
+                    "run_check_now",
+                    "snooze",
+                    "maintenance_on",
+                    "maintenance_off"
+                  ]
+                },
+                "uniqueItems": true
+              }
+            }
+          },
+          "maintenance": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "mode",
+              "snooze_until"
+            ],
+            "properties": {
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "active",
+                  "maintenance",
+                  "snoozed"
+                ]
+              },
+              "snooze_until": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

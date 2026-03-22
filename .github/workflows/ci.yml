@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Run unit tests
+        run: |
+          python3 -m unittest \
+            tests.test_config_contract \
+            tests.test_history \
+            tests.test_dashboard_selected_panel \
+            tests.test_monitor \
+            tests.test_send_alert \
+            tests.test_temperature_collect \
+            tests.test_ai_gateway \
+            tests.test_check_devices_temperature
+
+      - name: Compile Python entrypoints
+        run: python3 -m py_compile bin/*.py
+
+      - name: Check dashboard JavaScript syntax
+        run: node --check www/status.js
+
+      - name: Verify setup scripts
+        run: |
+          bash scripts/setup-init.sh --dry-run
+          bash scripts/setup-apply.sh --dry-run
+          bash scripts/setup-verify.sh --dry-run

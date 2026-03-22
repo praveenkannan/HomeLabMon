@@ -1,0 +1,87 @@
+{
+  "instance_name": "homelab-dev",
+  "site_title": "HomeLabMon Dev Dashboard",
+  "dashboard_public_url": "https://monitor.example.invalid/status.html",
+  "timezone": "America/Los_Angeles",
+  "api_contract_version": "1.0",
+  "feature_flags": {
+    "ai_chat_enabled": false,
+    "advanced_animations": true,
+    "restart_actions_enabled": false
+  },
+  "ai": {
+    "ai_enabled": "auto",
+    "allow_ai_fallback": true,
+    "ai_provider": "openai-compatible",
+    "ai_base_url": "https://llm-gateway.example.invalid/api",
+    "ai_model": "ops-assistant-v1",
+    "ai_timeout_ms": 5000
+  },
+  "devices": [
+    {
+      "id": "router",
+      "display_name": "Edge Router",
+      "host": "192.168.1.1",
+      "logo_url": "./www/assets/router.svg",
+      "checks": {
+        "ping": true,
+        "tcp_ports": [
+          22,
+          443
+        ],
+        "http_urls": [
+          "https://router.example.invalid/health"
+        ],
+        "dns_names": [
+          "router.local"
+        ]
+      },
+      "action_policy": {
+        "allow_restart": false,
+        "allowed_actions": [
+          "run_check_now",
+          "snooze",
+          "maintenance_on",
+          "maintenance_off"
+        ]
+      },
+      "maintenance": {
+        "mode": "active",
+        "snooze_until": null
+      }
+    },
+    {
+      "id": "pi-monitor",
+      "display_name": "Pi Monitor",
+      "host": "monitor.example.invalid",
+      "logo_url": "./www/assets/pi.svg",
+      "checks": {
+        "ping": true,
+        "tcp_ports": [
+          22,
+          8080
+        ],
+        "http_urls": [
+          "https://monitor.example.invalid/api/v1/status"
+        ],
+        "dns_names": [
+          "monitor.example.invalid"
+        ]
+      },
+      "action_policy": {
+        "allow_restart": true,
+        "allowed_actions": [
+          "restart",
+          "run_check_now",
+          "snooze",
+          "maintenance_on",
+          "maintenance_off"
+        ]
+      },
+      "maintenance": {
+        "mode": "snoozed",
+        "snooze_until": "2026-03-22T16:00:00Z"
+      }
+    }
+  ]
+}
