@@ -53,7 +53,6 @@ PY
 require_dir "$REPO_ROOT/bin"
 require_dir "$REPO_ROOT/www"
 require_dir "$REPO_ROOT/config"
-require_dir "$REPO_ROOT/state"
 require_dir "$REPO_ROOT/scripts"
 require_dir "$REPO_ROOT/docs/contracts"
 require_dir "$REPO_ROOT/tests"

@@ -133,8 +133,15 @@ class ConfigContractTests(unittest.TestCase):
         workflow = (ROOT / '.github' / 'workflows' / 'gitleaks.yml').read_text(encoding='utf-8')
 
         self.assertIn('fetch-depth: 0', workflow)
+        self.assertIn('curl -sSfL', workflow)
         self.assertIn('--log-opts="--all"', workflow)
         self.assertIn('upload-sarif', workflow)
+        self.assertIn('sarif_file: gitleaks.sarif', workflow)
+
+    def test_setup_verify_does_not_require_untracked_runtime_state_directory(self):
+        script = (ROOT / 'scripts' / 'setup-verify.sh').read_text(encoding='utf-8')
+
+        self.assertNotIn('require_dir "$REPO_ROOT/state"', script)
 
 
 if __name__ == '__main__':
