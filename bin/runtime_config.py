@@ -5,6 +5,10 @@ from pathlib import Path
 
 DEFAULT_RUNTIME_ROOT = Path('/opt/homelabmon')
 LEGACY_RUNTIME_ROOT = Path('/opt/pi-monitor')
+LEGACY_CERT_NAMES = {
+    'homelabmon.crt': 'vphomemonitor.crt',
+    'homelabmon.key': 'vphomemonitor.key',
+}
 
 
 def env_value(*names, default=None, env=None):
@@ -77,4 +81,11 @@ def certificate_path(filename, *, env_name, legacy_env_name, env=None):
     if configured:
         return configured
     path = runtime_path('certs', filename, env=env)
+    if path.exists():
+        return str(path)
+    legacy_name = LEGACY_CERT_NAMES.get(filename)
+    if legacy_name:
+        legacy_path = runtime_path('certs', legacy_name, env=env)
+        if legacy_path.exists():
+            return str(legacy_path)
     return str(path)

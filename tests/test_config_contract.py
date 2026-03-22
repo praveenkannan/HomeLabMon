@@ -43,6 +43,32 @@ class ConfigContractTests(unittest.TestCase):
 
         self.assertEqual(path, Path('config/devices.local.json'))
 
+    def test_certificate_path_falls_back_to_legacy_vphomemonitor_cert_names(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            certs = root / 'certs'
+            certs.mkdir()
+            legacy_cert = certs / 'vphomemonitor.crt'
+            legacy_key = certs / 'vphomemonitor.key'
+            legacy_cert.write_text('cert', encoding='utf-8')
+            legacy_key.write_text('key', encoding='utf-8')
+
+            cert_path = runtime_config.certificate_path(
+                'homelabmon.crt',
+                env_name='HOMELABMON_TLS_CERT',
+                legacy_env_name='PI_MONITOR_TLS_CERT',
+                env={'HOMELABMON_ROOT': str(root)},
+            )
+            key_path = runtime_config.certificate_path(
+                'homelabmon.key',
+                env_name='HOMELABMON_TLS_KEY',
+                legacy_env_name='PI_MONITOR_TLS_KEY',
+                env={'HOMELABMON_ROOT': str(root)},
+            )
+
+        self.assertEqual(cert_path, str(legacy_cert))
+        self.assertEqual(key_path, str(legacy_key))
+
     def test_example_config_drives_monitor_with_schema_shape(self):
         example = json.loads((ROOT / 'config' / 'devices.example.json').read_text(encoding='utf-8'))
 
