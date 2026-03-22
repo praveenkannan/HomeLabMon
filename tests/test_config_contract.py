@@ -207,7 +207,8 @@ class ConfigContractTests(unittest.TestCase):
         workflow = (ROOT / '.github' / 'workflows' / 'gitleaks.yml').read_text(encoding='utf-8')
 
         self.assertIn('fetch-depth: 0', workflow)
-        self.assertIn('curl -sSfL', workflow)
+        self.assertIn('https://api.github.com/repos/gitleaks/gitleaks/releases/latest', workflow)
+        self.assertIn('gitleaks_${GITLEAKS_VERSION#v}_linux_x64.tar.gz', workflow)
         self.assertIn('--log-opts="--all"', workflow)
         self.assertIn('upload-sarif', workflow)
         self.assertIn('sarif_file: gitleaks.sarif', workflow)
