@@ -5,10 +5,6 @@ from pathlib import Path
 
 DEFAULT_RUNTIME_ROOT = Path('/opt/homelabmon')
 LEGACY_RUNTIME_ROOT = Path('/opt/pi-monitor')
-LEGACY_CERT_NAMES = {
-    'homelabmon.crt': 'vphomemonitor.crt',
-    'homelabmon.key': 'vphomemonitor.key',
-}
 
 
 def env_value(*names, default=None, env=None):
@@ -64,6 +60,18 @@ def load_config(path=None, env=None):
         return {}
 
 
+def service_name(config=None, env=None):
+    configured = env_value('HOMELABMON_SERVICE_NAME', 'PI_MONITOR_SERVICE_NAME', env=env)
+    if configured:
+        return configured
+    payload = config if config is not None else load_config(env=env)
+    if isinstance(payload, dict):
+        value = payload.get('service_name')
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return 'homelabmon'
+
+
 def dashboard_url(config=None, env=None):
     configured = env_value('HOMELABMON_DASHBOARD_URL', 'PI_MONITOR_DASHBOARD_URL', env=env)
     if configured is not None:
@@ -76,16 +84,19 @@ def dashboard_url(config=None, env=None):
     return ''
 
 
-def certificate_path(filename, *, env_name, legacy_env_name, env=None):
+def certificate_path(filename, *, env_name, legacy_env_name, env=None, config=None):
     configured = env_value(env_name, legacy_env_name, env=env)
     if configured:
         return configured
+    suffix = Path(filename).suffix
+    cert_dir = runtime_path('certs', env=env)
+    named_path = cert_dir / f"{service_name(config=config, env=env)}{suffix}"
+    if named_path.exists():
+        return str(named_path)
     path = runtime_path('certs', filename, env=env)
     if path.exists():
         return str(path)
-    legacy_name = LEGACY_CERT_NAMES.get(filename)
-    if legacy_name:
-        legacy_path = runtime_path('certs', legacy_name, env=env)
-        if legacy_path.exists():
-            return str(legacy_path)
+    matches = sorted(cert_dir.glob(f'*{suffix}'))
+    if len(matches) == 1:
+        return str(matches[0])
     return str(path)

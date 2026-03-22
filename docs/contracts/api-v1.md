@@ -157,6 +157,7 @@ Returns deploy-time metadata and feature flags.
 {
   "instance_name": "homelab-dev",
   "site_title": "HomeLabMon Dev Dashboard",
+  "service_name": "homelabmon-status",
   "dashboard_public_url": "https://monitor.example.invalid/status.html",
   "timezone": "America/Los_Angeles",
   "api_version": "1.0",
