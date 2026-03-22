@@ -129,6 +129,13 @@ class ConfigContractTests(unittest.TestCase):
 
         self.assertIn('www/status.html', ignore)
 
+    def test_gitleaks_workflow_scans_full_history(self):
+        workflow = (ROOT / '.github' / 'workflows' / 'gitleaks.yml').read_text(encoding='utf-8')
+
+        self.assertIn('fetch-depth: 0', workflow)
+        self.assertIn('--log-opts="--all"', workflow)
+        self.assertIn('upload-sarif', workflow)
+
 
 if __name__ == '__main__':
     unittest.main()

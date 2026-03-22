@@ -38,3 +38,7 @@ When reporting, include:
 - avoid widening network exposure defaults
 - preserve explicit confirmation for state-changing actions
 - prefer localhost-only or opt-in network access defaults
+
+## Repository Secret Scanning
+
+The repository runs automated secret scanning in GitHub Actions with gitleaks against full git history, not just the current tree. If a scan finds a secret or private credential in history, rotate it first and then rewrite history before continuing normal development.
