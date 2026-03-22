@@ -19,6 +19,8 @@ class ConfigContractTests(unittest.TestCase):
     def test_schema_includes_temperature_configuration(self):
         schema = json.loads((ROOT / 'config' / 'config.schema.json').read_text(encoding='utf-8'))
         self.assertIn('temperature', schema.get('properties', {}))
+        self.assertIn('service_name', schema.get('properties', {}))
+        self.assertIn('service_name', schema.get('required', []))
 
     def test_env_example_points_to_local_inventory_file(self):
         env_example = (ROOT / 'config' / 'env.example').read_text(encoding='utf-8')
@@ -43,8 +45,73 @@ class ConfigContractTests(unittest.TestCase):
 
         self.assertEqual(path, Path('config/devices.local.json'))
 
+    def test_service_name_prefers_env_then_config(self):
+        self.assertEqual(
+            runtime_config.service_name(config={'service_name': 'from-config'}, env={'HOMELABMON_SERVICE_NAME': 'from-env'}),
+            'from-env',
+        )
+        self.assertEqual(
+            runtime_config.service_name(config={'service_name': 'from-config'}, env={}),
+            'from-config',
+        )
+
+    def test_certificate_path_uses_service_name_basename(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            certs = root / 'certs'
+            certs.mkdir()
+            named_cert = certs / 'edge-monitor.crt'
+            named_key = certs / 'edge-monitor.key'
+            named_cert.write_text('cert', encoding='utf-8')
+            named_key.write_text('key', encoding='utf-8')
+
+            cert_path = runtime_config.certificate_path(
+                'homelabmon.crt',
+                env_name='HOMELABMON_TLS_CERT',
+                legacy_env_name='PI_MONITOR_TLS_CERT',
+                env={'HOMELABMON_ROOT': str(root)},
+                config={'service_name': 'edge-monitor'},
+            )
+            key_path = runtime_config.certificate_path(
+                'homelabmon.key',
+                env_name='HOMELABMON_TLS_KEY',
+                legacy_env_name='PI_MONITOR_TLS_KEY',
+                env={'HOMELABMON_ROOT': str(root)},
+                config={'service_name': 'edge-monitor'},
+            )
+
+        self.assertEqual(cert_path, str(named_cert))
+        self.assertEqual(key_path, str(named_key))
+
+    def test_certificate_path_falls_back_to_single_existing_cert_pair(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            certs = root / 'certs'
+            certs.mkdir()
+            single_cert = certs / 'local-monitor.crt'
+            single_key = certs / 'local-monitor.key'
+            single_cert.write_text('cert', encoding='utf-8')
+            single_key.write_text('key', encoding='utf-8')
+
+            cert_path = runtime_config.certificate_path(
+                'homelabmon.crt',
+                env_name='HOMELABMON_TLS_CERT',
+                legacy_env_name='PI_MONITOR_TLS_CERT',
+                env={'HOMELABMON_ROOT': str(root)},
+            )
+            key_path = runtime_config.certificate_path(
+                'homelabmon.key',
+                env_name='HOMELABMON_TLS_KEY',
+                legacy_env_name='PI_MONITOR_TLS_KEY',
+                env={'HOMELABMON_ROOT': str(root)},
+            )
+
+        self.assertEqual(cert_path, str(single_cert))
+        self.assertEqual(key_path, str(single_key))
+
     def test_example_config_drives_monitor_with_schema_shape(self):
         example = json.loads((ROOT / 'config' / 'devices.example.json').read_text(encoding='utf-8'))
+        self.assertEqual(example['service_name'], 'homelabmon-status')
 
         with tempfile.TemporaryDirectory() as tmpdir:
             base = Path(tmpdir)
@@ -129,11 +196,19 @@ class ConfigContractTests(unittest.TestCase):
 
         self.assertIn('www/status.html', ignore)
 
+    def test_security_verify_uses_generic_service_defaults(self):
+        script = (ROOT / 'bin' / 'security_verify.sh').read_text(encoding='utf-8')
+
+        self.assertIn('homelabmon-status.service', script)
+        self.assertIn('HOMELABMON_SECURITY_SERVICE_NAME', script)
+        self.assertIn('HOMELABMON_SECURITY_UNIT_FILE', script)
+
     def test_gitleaks_workflow_scans_full_history(self):
         workflow = (ROOT / '.github' / 'workflows' / 'gitleaks.yml').read_text(encoding='utf-8')
 
         self.assertIn('fetch-depth: 0', workflow)
-        self.assertIn('curl -sSfL', workflow)
+        self.assertIn('https://api.github.com/repos/gitleaks/gitleaks/releases/latest', workflow)
+        self.assertIn('gitleaks_${GITLEAKS_VERSION#v}_linux_x64.tar.gz', workflow)
         self.assertIn('--log-opts="--all"', workflow)
         self.assertIn('upload-sarif', workflow)
         self.assertIn('sarif_file: gitleaks.sarif', workflow)

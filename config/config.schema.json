@@ -7,6 +7,7 @@
   "required": [
     "instance_name",
     "site_title",
+    "service_name",
     "dashboard_public_url",
     "timezone",
     "api_contract_version",
@@ -21,6 +22,11 @@
     },
     "site_title": {
       "type": "string",
+      "minLength": 1
+    },
+    "service_name": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_.-]*$",
       "minLength": 1
     },
     "dashboard_public_url": {
